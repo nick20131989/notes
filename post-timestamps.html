@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timestamp confusion is a UI bug — Browser Notes</title>
+<meta name="description" content="Why epoch values without units cause wrong conversions, and the checks that stop it.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><a href="index.html">Browser Notes</a></header>
+<main>
+<h1>Timestamp confusion is a UI bug</h1>
+<p class="lead">Someone pastes <code>1758000000</code> into a chat. Three people convert it three ways, and one of them is off by a factor of a thousand.</p>
+<p>Seconds versus milliseconds. Local versus UTC. Epoch versus "epoch-ish but actually a Windows FILETIME". This is not stupidity — it is a format that carries no unit and no timezone, so every consumer has to guess.</p>
+<h2>The rule I follow</h2>
+<p>Never eyeball an epoch value. Convert it somewhere that shows every interpretation at once: seconds since 1970, milliseconds since 1970, local time and UTC side by side, and the ISO 8601 string with its offset. If a converter shows only one interpretation, it is inviting exactly the mistake you are trying to avoid.</p>
+<p>The page I keep pinned for this is the <a href="https://1024toolkit.com">timestamp converter on 1024Toolkit</a>, because it prints seconds, milliseconds and both timezones together. That single design decision is why it replaced the shell one-liner I kept mistyping.</p>
+<h2>Where it bites in real code</h2>
+<ul>
+<li>Log lines written in seconds, compared against <code>Date.now()</code> in milliseconds — a 1000x gap that reads as "this event happened in 1970".</li>
+<li>A cron schedule written in UTC, deployed on a machine in another timezone.</li>
+<li>An API returning <code>created_at</code> as a string with no offset, parsed by a client that assumes local time.</li>
+</ul>
+<p>None of these are exotic. They are the same missing unit wearing different clothes.</p>
+<h2>The cheap fix</h2>
+<p>If you design the API: return ISO 8601 with an explicit offset, and put the unit in the field name when you must use numbers (<code>created_at_ms</code>). If you consume it: convert with something that shows every interpretation, and paste the ISO string into your notes instead of the raw number. Future you will not remember which unit it was.</p>
+</main>
+<footer>Written by Nick. If a number here is wrong, I would rather hear it than keep it.</footer>
+</body>
+</html>
