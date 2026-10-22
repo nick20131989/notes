@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why /27 trips people up — Browser Notes</title>
+<meta name="description" content="The two numbers people get wrong in small subnets, and a way to check the maths in ten seconds.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><a href="index.html">Browser Notes</a></header>
+<main>
+<h1>Why /27 trips people up</h1>
+<p class="lead">Ask someone to range a /27 from memory and you will usually get two answers: one right, one that looks right.</p>
+<p>A /27 gives 32 addresses. Eight of them exist, thirty-two use up the block, and the usable host range sits in the middle. The arithmetic is trivial; what fails is bookkeeping — which block you are actually in, and where the boundaries landed.</p>
+<h2>The two numbers that get mixed up</h2>
+<p><strong>Block size versus usable hosts.</strong> A /27 is 32 addresses with 30 usable. People remember "30 hosts" and then step 30 through the address space, which drifts a little further off with every block. The step is 32. Hosts are what is left after the first and last address.</p>
+<p><strong>Network address versus the address you were given.</strong> If someone hands you 10.0.0.100/27, the network is not 10.0.0.100 — it is 10.0.0.96, because 100 sits inside the fourth block of 32. Everything downstream (broadcast, gateway choice, firewall rules) depends on getting that one right.</p>
+<h2>A ten-second check I actually use</h2>
+<p>Three steps, in this order, and the answer falls out:</p>
+<ul>
+<li>Block size = 2<sup>(32 − prefix)</sup>. /27 → 32.</li>
+<li>Network = the address rounded <em>down</em> to a multiple of the block size (in the last octet, for anything /24 or longer).</li>
+<li>Broadcast = network + block size − 1. Usable = everything between.</li>
+</ul>
+<p>Doing that in my head at 32 addresses is fine. At /22 or with a non-octet boundary, I stop doing it in my head — a <a href="https://1024toolkit.com/tools/subnet">subnet calculator that prints the network, broadcast and usable range together</a> is faster than being confidently wrong, and the printed range is something you can paste into a ticket.</p>
+<h2>The part that bites in production</h2>
+<ul>
+<li>A /27 sized for "30 hosts" that already has a gateway and a switch management address on it — so 28 usable, not 30.</li>
+<li>Two teams allocating from the same /24 without a shared map, both landing in the same /27.</li>
+<li>Overlapping ranges that only show up when the second site comes online.</li>
+</ul>
+<p>None of these are subnetting mistakes. They are bookkeeping mistakes wearing subnetting clothes — which is why writing the range down (network, first host, last host, broadcast) matters more than the arithmetic.</p>
+</main>
+<footer>Written by Nick. If a number here is wrong, I would rather hear it than keep it.</footer>
+</body>
+</html>
